@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Question Timer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: #020617;
+      border-radius: 16px;
+      padding: 20px 24px 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 1px solid #1f2937;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      padding: 14px 16px 16px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: #d1d5db;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #0b1220;
+      color: #e5e7eb;
+      font-size: 13px;
+      outline: none;
+    }
+    input[type="number"]:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px #6366f1;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #1f2937;
+      transition: background 0.15s, transform 0.06s, box-shadow 0.15s;
+    }
+
+    button.primary {
+      background: #4f46e5;
+      border-color: #6366f1;
+    }
+    button.danger {
+      background: #b91c1c;
+      border-color: #ef4444;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+    button:not(:disabled):hover {
+      background: #1f2937;
+    }
+    button.primary:not(:disabled):hover {
+      background: #4338ca;
+    }
+    button.danger:not(:disabled):hover {
+      background: #991b1b;
+    }
+    button:not(:disabled):active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 rgba(0,0,0,0);
+    }
+
+    .timer-display {
+      font-size: 40px;
+      font-weight: 700;
+      text-align: center;
+      margin: 10px 0 8px;
+    }
+
+    .timer-sub {
+      font-size: 13px;
+      text-align: center;
+      color: #9ca3af;
+      margin-bottom: 10px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+
+    .pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      color: #9ca3af;
+    }
+
+    .pill span {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .question-counter {
+      font-size: 13px;
+      text-align: center;
+      margin-top: 4px;
+      color: #d1d5db;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      color: #9ca3af;
+    }
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+
+    .results-table-wrapper {
+      max-height: 280px;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead {
+      position: sticky;
+      top: 0;
+      background: #020617;
+      z-index: 1;
+    }
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #1f2937;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      font-weight: 600;
+      color: #9ca3af;
+    }
+
+    tr.good {
+      background: rgba(34,197,94,0.12);
+    }
+    tr.ok {
+      background: rgba(249,250,251,0.02);
+    }
+    tr.buffer {
+      background: rgba(56,189,248,0.10);
+    }
+    tr.slow {
+      background: rgba(249,115,22,0.18);
+    }
+    tr.skip {
+      background: rgba(248,113,113,0.22);
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      border: 1px solid #374151;
+      display: inline-block;
+    }
+    .status-good { color: #22c55e; border-color: #22c55e; }
+    .status-ok { color: #f9fafb; border-color: #9ca3af; }
+    .status-buffer { color: #38bdf8; border-color: #38bdf8; }
+    .status-slow { color: #fdba74; border-color: #fb923c; }
+    .status-skip { color: #fecaca; border-color: #fca5a5; }
+
+    .summary {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #1f2937;
+      font-size: 13px;
+      color: #d1d5db;
+    }
+    .summary strong {
+      color: #e5e7eb;
+    }
+    .summary-row {
+      margin-bottom: 3px;
+    }
+
+    .muted {
+      color: #9ca3af;
+    }
+
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .app {
+      position: relative;
+    }
+
+    .background-audio {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      z-index: 5;
+    }
+
+    #backgroundToggle, #foregroundToggle {
+      margin: 0;
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      background: transparent;
+      border: 1px solid #374151;
+      color: #9ca3af;
+    }
+
+    #backgroundPanel {
+      display: none;
+      position: absolute;
+      top: 34px;
+      right: 0;
+      width: min(280px, calc(100vw - 56px));
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 9px 11px;
+      background: #020617;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.45);
+    }
+
+    #backgroundPanel.open {
+      display: block;
+    }
+
+    #backgroundStatus {
+      margin: 0 0 6px;
+      color: #9ca3af;
+      font-size: 11px;
+    }
+
+    #backgroundTrackList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #backgroundTrackList li {
+      margin: 0;
+      padding: 0;
+    }
+
+    #backgroundTrackList button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 6px 2px;
+      border: 0;
+      border-radius: 0;
+      border-bottom: 1px solid #1f2937;
+      background: transparent;
+      color: #d1d5db;
+      text-align: left;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    #backgroundTrackList button:hover {
+      background: #111827;
+      color: #fff;
+    }
+
+    /* Full-screen, GUI-free song selection mode. */
+    #foregroundScreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow-y: auto;
+      background: #000;
+      color: #fff;
+      padding: 8vh 8vw;
+    }
+
+    #foregroundScreen.active { display: block; }
+
+    #foregroundTrackList {
+      list-style: none;
+      margin: 0 auto;
+      padding: 0;
+      max-width: 680px;
+    }
+
+    #foregroundTrackList li { margin: 0; padding: 0; }
+
+    #foregroundTrackList button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 12px 0;
+      border: 0;
+      border-bottom: 1px solid #222;
+      border-radius: 0;
+      background: transparent;
+      color: #eee;
+      text-align: left;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    #foregroundTrackList button:hover { background: #111; color: #fff; }
+
+    #foregroundStatus {
+      max-width: 680px;
+      margin: 0 auto 12px;
+      color: #777;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="background-audio">
+    <button id="backgroundToggle" type="button" aria-expanded="false">Background</button>
+    <button id="foregroundToggle" type="button">Foreground</button>
+    <div id="backgroundPanel">
+      <p id="backgroundStatus">Open to load audio tracks.</p>
+      <ul id="backgroundTrackList"></ul>
+    </div>
+  </div>
+  <audio id="backgroundAudio" preload="none"></audio>
+
+  <div id="foregroundScreen" aria-label="Song list">
+    <p id="foregroundStatus">Loading songs…</p>
+    <ul id="foregroundTrackList"></ul>
+  </div>
+
+  <h1>Question Timer</h1>
+  <div class="hint">
+    Keyboard: <strong>Enter</strong> = next question &nbsp;•&nbsp;
+    <strong>Space</strong> = mark “did not get” &nbsp;•&nbsp;
+    Works in whole seconds only.
+  </div>
+
+  <div class="layout">
+    <!-- Left: Session setup + timer controls -->
+    <div class="card">
+      <h2>Session Setup</h2>
+      <label for="maxTimeInput">Maximum time per question (seconds)</label>
+      <input id="maxTimeInput" type="number" min="1" value="60">
+      <div style="margin-top:8px;margin-bottom:4px;">
+        <button id="startSessionBtn" class="primary">Start New Session</button>
+      </div>
+      <div class="pill-row">
+        <div class="pill">Current max: <span id="currentMaxLabel">60s</span></div>
+        <div class="pill">Questions so far: <span id="questionsCountLabel">0</span></div>
+      </div>
+
+      <hr style="border: none; border-top: 1px dashed #1f2937; margin: 10px 0;">
+
+      <h2>Timer</h2>
+      <div class="timer-display" id="timerDisplay">0s</div>
+      <div class="timer-sub" id="timerSubtext">Press “Start session” to begin.</div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <button id="startTimerBtn" class="primary">Start / Resume</button>
+        <button id="pauseTimerBtn">Pause</button>
+      </div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <button id="nextQuestionBtn">Next Question (Enter)</button>
+        <button id="skipQuestionBtn">Did Not Get (Space)</button>
+      </div>
+      <div style="text-align:center;">
+        <button id="endSessionBtn" class="danger">End Session &amp; Show Summary</button>
+      </div>
+      <div class="question-counter" id="questionCounter">
+        No active session.
+      </div>
+    </div>
+
+    <!-- Right: Results + summary -->
+    <div class="card">
+      <h2>Question Log</h2>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-color" style="background:#22c55e;"></span> ≤ 70% max (green)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#f9fafb;"></span> 90–105% max (white)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#fb923c;"></span> &gt; 105% max (orange)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#f97373;"></span> Didn’t get (red)</div>
+      </div>
+      <div class="results-table-wrapper">
+        <table>
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Time (s)</th>
+            <th>% of max</th>
+            <th>Status</th>
+          </tr>
+          </thead>
+          <tbody id="resultsBody">
+          <tr><td colspan="4" class="muted">No questions yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary" id="summary" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State
+  let maxTimePerQuestion = 60;
+  let timerInterval = null;
+  let currentSeconds = 0;
+  let currentQuestion = 0;
+  let sessionActive = false;
+  let results = []; // {index, time, percent, status}
+
+  const maxTimeInput = document.getElementById('maxTimeInput');
+  const currentMaxLabel = document.getElementById('currentMaxLabel');
+  const questionsCountLabel = document.getElementById('questionsCountLabel');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const timerSubtext = document.getElementById('timerSubtext');
+  const questionCounter = document.getElementById('questionCounter');
+  const resultsBody = document.getElementById('resultsBody');
+  const summaryDiv = document.getElementById('summary');
+
+  const startSessionBtn = document.getElementById('startSessionBtn');
+  const startTimerBtn = document.getElementById('startTimerBtn');
+  const pauseTimerBtn = document.getElementById('pauseTimerBtn');
+  const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+  const skipQuestionBtn = document.getElementById('skipQuestionBtn');
+  const endSessionBtn = document.getElementById('endSessionBtn');
+
+  function updateTimerDisplay() {
+    timerDisplay.textContent = currentSeconds + 's';
+    if (sessionActive) {
+      timerSubtext.textContent = 'Answering question ' + currentQuestion +
+        ' / ' + (maxTimePerQuestion + 's max');
+    }
+  }
+
+  function updateQuestionCounter() {
+    if (!sessionActive) {
+      questionCounter.textContent = 'No active session.';
+    } else {
+      questionCounter.textContent = 'Question ' + currentQuestion +
+        ' • Total logged: ' + results.length;
+    }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    currentSeconds = 0;
+    updateTimerDisplay();
+  }
+
+  function startTimer() {
+    if (!sessionActive) return;
+    if (timerInterval !== null) return;
+    timerInterval = setInterval(() => {
+      currentSeconds += 1;
+      updateTimerDisplay();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval !== null) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function clearResultsTable() {
+    resultsBody.innerHTML = '';
+  }
+
+  function appendResultRow(result) {
+    const tr = document.createElement('tr');
+    tr.classList.add(result.rowClass);
+
+    const tdIndex = document.createElement('td');
+    tdIndex.textContent = result.index;
+
+    const tdTime = document.createElement('td');
+    tdTime.textContent = result.time;
+
+    const tdPercent = document.createElement('td');
+    tdPercent.textContent = isNaN(result.percent) ? '—' : result.percent.toFixed(1) + '%';
+
+    const tdStatus = document.createElement('td');
+    const span = document.createElement('span');
+    span.className = 'status-pill ' + result.statusClass;
+    span.textContent = result.statusLabel;
+    tdStatus.appendChild(span);
+
+    tr.append(tdIndex, tdTime, tdPercent, tdStatus);
+    resultsBody.appendChild(tr);
+  }
+
+  function refreshResultsTable() {
+    clearResultsTable();
+    if (results.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4;
+      td.textContent = 'No questions yet.';
+      td.className = 'muted';
+      tr.appendChild(td);
+      resultsBody.appendChild(tr);
+      return;
+    }
+    results.forEach(appendResultRow);
+  }
+
+  function classifyResult(time, statusType) {
+    if (statusType === 'skip') {
+      return {
+        rowClass: 'skip',
+        statusClass: 'status-skip',
+        statusLabel: 'Did not get',
+        percent: NaN
+      };
+    }
+    const percent = (time / maxTimePerQuestion) * 100;
+
+    // Default classification based on percentage
+    let rowClass, statusClass, statusLabel;
+    if (percent <= 70) {
+      rowClass = 'good';
+      statusClass = 'status-good';
+      statusLabel = '≤70% (fast)';
+    } else if (percent >= 90 && percent <= 105) {
+      rowClass = 'ok';
+      statusClass = 'status-ok';
+      statusLabel = '90–105% (on time)';
+    } else if (percent > 105) {
+      rowClass = 'slow';
+      statusClass = 'status-slow';
+      statusLabel = '>105% (slow)';
+    } else {
+      // 70–90% window: not specified by you, so a neutral "buffer" zone.
+      rowClass = 'buffer';
+      statusClass = 'status-buffer';
+      statusLabel = '70–90% (buffer)';
+    }
+
+    return { rowClass, statusClass, statusLabel, percent };
+  }
+
+  function logCurrentQuestion(statusType) {
+    if (!sessionActive || currentQuestion === 0) return;
+    const time = currentSeconds;
+    const classification = classifyResult(time, statusType);
+
+    const result = {
+      index: currentQuestion,
+      time: time,
+      percent: classification.percent,
+      rowClass: classification.rowClass,
+      statusClass: classification.statusClass,
+      statusLabel: classification.statusLabel,
+      statusType: statusType
+    };
+    results.push(result);
+    refreshResultsTable();
+    questionsCountLabel.textContent = results.length.toString();
+  }
+
+  function startNewSession() {
+    const val = parseInt(maxTimeInput.value, 10);
+    if (isNaN(val) || val <= 0) {
+      alert('Please enter a positive number of seconds for max time per question.');
+      return;
+    }
+    maxTimePerQuestion = val;
+    currentMaxLabel.textContent = maxTimePerQuestion + 's';
+
+    // Reset state
+    stopTimer();
+    currentSeconds = 0;
+    currentQuestion = 1;
+    sessionActive = true;
+    results = [];
+    summaryDiv.style.display = 'none';
+    summaryDiv.innerHTML = '';
+
+    updateTimerDisplay();
+    updateQuestionCounter();
+    refreshResultsTable();
+    questionsCountLabel.textContent = '0';
+    timerSubtext.textContent = 'Session started. You are on question 1. Press Start / Resume or use keyboard shortcuts.';
+  }
+
+  function moveToNextQuestion(statusType) {
+    if (!sessionActive) return;
+    // Record current question first
+    logCurrentQuestion(statusType);
+    // Prepare next question
+    currentQuestion += 1;
+    resetTimer();      // resets & stops; we immediately start timer again
+    startTimer();      // auto-start timer for the next question
+    updateQuestionCounter();
+    timerSubtext.textContent = 'Answering question ' + currentQuestion + ' / ' +
+      (maxTimePerQuestion + 's max');
+  }
+
+  function endSession() {
+    if (!sessionActive) {
+      alert('No active session to end.');
+      return;
+    }
+    // Log the current question as "completed" if there has been some time spent
+    if (currentQuestion > 0 && currentSeconds > 0) {
+      logCurrentQuestion('normal');
+    }
+    stopTimer();
+    sessionActive = false;
+    updateQuestionCounter();
+    timerSubtext.textContent = 'Session ended. See summary on the right.';
+
+    // Compute summary
+    if (results.length === 0) {
+      summaryDiv.style.display = 'block';
+      summaryDiv.innerHTML = '<div class="summary-row muted">No questions were recorded.</div>';
+      return;
+    }
+
+    let totalTimeAll = 0;
+    let totalTimeAttempted = 0;
+    let attemptedCount = 0;
+    let skipCount = 0;
+
+    results.forEach(r => {
+      totalTimeAll += r.time;
+      if (r.statusType === 'skip') {
+        skipCount += 1;
+      } else {
+        attemptedCount += 1;
+        totalTimeAttempted += r.time;
+      }
+    });
+
+    const avgAll = totalTimeAll / results.length;
+    const avgAttempted = attemptedCount > 0 ? (totalTimeAttempted / attemptedCount) : NaN;
+
+    let html = '';
+    html += '<div class="summary-row"><strong>Total questions:</strong> ' +
+      results.length + '</div>';
+    html += '<div class="summary-row"><strong>Marked “did not get” (spacebar):</strong> ' +
+      skipCount + '</div>';
+    html += '<div class="summary-row"><strong>Average time per question (all):</strong> ' +
+      avgAll.toFixed(2) + 's</div>';
+    if (!isNaN(avgAttempted)) {
+      html += '<div class="summary-row"><strong>Average time per question (attempted only):</strong> ' +
+        avgAttempted.toFixed(2) + 's</div>';
+    } else {
+      html += '<div class="summary-row muted">No attempted questions (everything was marked “did not get”).</div>';
+    }
+
+    summaryDiv.innerHTML = html;
+    summaryDiv.style.display = 'block';
+  }
+
+  // Button handlers
+  startSessionBtn.addEventListener('click', startNewSession);
+  startTimerBtn.addEventListener('click', startTimer);
+  pauseTimerBtn.addEventListener('click', stopTimer);
+  nextQuestionBtn.addEventListener('click', () => moveToNextQuestion('normal'));
+  skipQuestionBtn.addEventListener('click', () => moveToNextQuestion('skip'));
+  endSessionBtn.addEventListener('click', endSession);
+
+  // Keyboard shortcuts: Enter = next question, Space = skip
+  document.addEventListener('keydown', (e) => {
+    // ignore if focused in an input/textarea (so you can type numbers)
+    const tag = e.target.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    if (e.code === 'Enter') {
+      e.preventDefault();
+      if (sessionActive) {
+        moveToNextQuestion('normal');
+      }
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      if (sessionActive) {
+        moveToNextQuestion('skip');
+      }
+    }
+  });
+
+  // Initial display
+  updateTimerDisplay();
+  updateQuestionCounter();
+</script>
+
+<script>
+  // Background audio library.
+  // Standard GitHub Pages URLs are detected automatically:
+  // https://OWNER.github.io/REPOSITORY/
+  // If you use a custom domain, fill in the three values below.
+  const AUDIO_GITHUB_OWNER = '';
+  const AUDIO_GITHUB_REPO = '';
+  const AUDIO_GITHUB_BRANCH = 'main';
+  const AUDIO_FOLDER = 'audio';
+
+  const backgroundToggle = document.getElementById('backgroundToggle');
+  const backgroundPanel = document.getElementById('backgroundPanel');
+  const backgroundStatus = document.getElementById('backgroundStatus');
+  const backgroundTrackList = document.getElementById('backgroundTrackList');
+  const foregroundToggle = document.getElementById('foregroundToggle');
+  const foregroundScreen = document.getElementById('foregroundScreen');
+  const foregroundStatus = document.getElementById('foregroundStatus');
+  const foregroundTrackList = document.getElementById('foregroundTrackList');
+  const backgroundAudio = document.getElementById('backgroundAudio');
+  backgroundAudio.loop = true; // Keep the selected track repeating until another track is chosen.
+
+  let backgroundTracksLoaded = false;
+
+  function getAudioRepository() {
+    const hostOwner = window.location.hostname.split('.')[0];
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+
+    const owner = AUDIO_GITHUB_OWNER || hostOwner;
+    let repo = AUDIO_GITHUB_REPO;
+
+    if (!repo) {
+      repo = pathParts.length ? pathParts[0] : `${hostOwner}.github.io`;
+    }
+
+    return { owner, repo, branch: AUDIO_GITHUB_BRANCH };
+  }
+
+  async function getMp3Files(path) {
+    const { owner, repo, branch } = getAudioRepository();
+    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`;
+
+    const response = await fetch(apiUrl, {
+      headers: { Accept: 'application/vnd.github+json' }
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        response.status === 404
+          ? 'Audio folder or repository not found. Check the repository, branch and audio folder.'
+          : `GitHub API returned ${response.status}. Try again later.`
+      );
+    }
+
+    const entries = await response.json();
+    if (!Array.isArray(entries)) return [];
+
+    const files = [];
+    for (const entry of entries) {
+      if (entry.type === 'file' && /\.mp3$/i.test(entry.name) && entry.download_url) {
+        files.push({ name: entry.path.slice(AUDIO_FOLDER.length + 1), url: entry.download_url });
+      } else if (entry.type === 'dir') {
+        const nested = await getMp3Files(entry.path);
+        files.push(...nested);
+      }
+    }
+    return files;
+  }
+
+  function createTrackButton(track) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = track.name;
+    button.title = `Play ${track.name}`;
+    button.addEventListener('click', async () => {
+      backgroundAudio.src = track.url;
+      try {
+        await backgroundAudio.play();
+        backgroundStatus.textContent = `Playing: ${track.name}`;
+        foregroundStatus.textContent = `Playing: ${track.name}`;
+      } catch (error) {
+        backgroundStatus.textContent = 'Playback could not start. Click the track again.';
+        foregroundStatus.textContent = 'Playback could not start. Select the song again.';
+      }
+    });
+    return button;
+  }
+
+  async function loadBackgroundTracks() {
+    backgroundStatus.textContent = 'Loading tracks…';
+    foregroundStatus.textContent = 'Loading songs…';
+    backgroundTrackList.replaceChildren();
+    foregroundTrackList.replaceChildren();
+
+    try {
+      const tracks = await getMp3Files(AUDIO_FOLDER);
+      tracks.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+      if (!tracks.length) {
+        backgroundStatus.textContent = 'No MP3 files found in the audio folder.';
+        foregroundStatus.textContent = 'No songs found.';
+        backgroundTracksLoaded = true;
+        return;
+      }
+
+      for (const track of tracks) {
+        const backgroundItem = document.createElement('li');
+        backgroundItem.appendChild(createTrackButton(track));
+        backgroundTrackList.appendChild(backgroundItem);
+
+        const foregroundItem = document.createElement('li');
+        foregroundItem.appendChild(createTrackButton(track));
+        foregroundTrackList.appendChild(foregroundItem);
+      }
+
+      backgroundStatus.textContent = `${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
+      foregroundStatus.textContent = `${tracks.length} song${tracks.length === 1 ? '' : 's'}`;
+      backgroundTracksLoaded = true;
+    } catch (error) {
+      backgroundStatus.textContent = error.message;
+      foregroundStatus.textContent = error.message;
+    }
+  }
+
+  backgroundToggle.addEventListener('click', () => {
+    const isOpen = backgroundPanel.classList.toggle('open');
+    backgroundToggle.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen && !backgroundTracksLoaded) {
+      loadBackgroundTracks();
+    }
+  });
+
+  // Close the list when clicking elsewhere, without interrupting playback.
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.background-audio')) {
+      backgroundPanel.classList.remove('open');
+      backgroundToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  foregroundToggle.addEventListener('click', () => {
+    foregroundScreen.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if (!backgroundTracksLoaded) loadBackgroundTracks();
+  });
+
+  // Escape returns to the timer; the foreground screen itself has no visible GUI.
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && foregroundScreen.classList.contains('active')) {
+      foregroundScreen.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  });
+</script>
+
+</body>
+</html>
